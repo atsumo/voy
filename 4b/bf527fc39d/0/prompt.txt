@@ -1,0 +1,1 @@
+.claude/settings.local.jsonは gitignoreに追加しておいて
