@@ -1,0 +1,29 @@
+Implementation complete. Here's a summary of what was built:
+
+## Voy - TUI File Manager
+
+**26 source files** across 8 modules, all type-checking cleanly.
+
+### Architecture
+
+| Layer | Files | Purpose |
+|-------|-------|---------|
+| **State** | `types.ts`, `reducer.ts`, `context.tsx` | AppState + useReducer with 22 action types, 5 modes (normal/command/search/visual/prompt) |
+| **FS** | `operations.ts`, `preview.ts` | Directory reading with sorting, file CRUD, text/directory preview with 256KB limit |
+| **Keybindings** | `parser.ts`, `registry.ts`, `definitions.ts` | Key buffer with 1s timeout, numeric prefix (5j), multi-key sequences (gg, dd, yy, pp) |
+| **Hooks** | `useFileSystem`, `useNavigation`, `usePreview`, `useKeyBindings` | Auto-load on path change, debounced preview, mode-dispatched input |
+| **Components** | 11 components | 3-pane layout (20/45/35%), virtual scrolling, status bar, command line |
+| **Utils** | `formatting.ts`, `colors.ts` | File size/date formatting, 30+ extension color mappings |
+
+### Supported Operations
+
+- **Navigation**: `hjkl`, arrows, `gg`/`G`, `Ctrl+d`/`Ctrl+u`
+- **File ops**: `yy` (copy), `dd` (delete with confirm), `pp` (paste), `r` (rename), `Space` (select), `v` (visual), `V` (select all)
+- **Modes**: `/` search with `n`/`N`, `:` commands (`:q`, `:cd`, `:mkdir`, `:touch`)
+- **Toggle**: `.` (hidden files), `q` (quit)
+
+### Run it
+
+```bash
+bun run src/index.tsx
+```
