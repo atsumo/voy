@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "210b5a355158",
+  "session_id": "f7cbceb4-d455-452b-87e5-9a0b98445ec4",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-19T14:51:18.64838Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/__tests__/formatting.test.ts",
+    "src/__tests__/fs.test.ts",
+    "src/__tests__/keybindings.test.ts",
+    "src/__tests__/reducer.test.ts"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "a8a41927-b225-4164-8190-ed751c7fce59",
+  "checkpoint_transcript_start": 449,
+  "transcript_lines_at_start": 449,
+  "token_usage": {
+    "input_tokens": 11,
+    "cache_creation_tokens": 15696,
+    "cache_read_tokens": 726686,
+    "output_tokens": 4994,
+    "api_call_count": 9
+  }
+}
