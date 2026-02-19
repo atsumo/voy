@@ -1,0 +1,13 @@
+バイナリビルド成功しました。
+
+**結果:**
+- `bun run build` で 59MB のスタンドアロン arm64 バイナリが生成される
+- Bun ランタイムごとバンドルされるので、ユーザーは Bun 不要
+- TTY 端末からはそのまま `./voy` で起動可能
+
+**Homebrew Tap 配布の次のステップ:**
+1. GitHub Actions で macOS (arm64 + x86_64) / Linux 向けにクロスビルド
+2. GitHub Releases にバイナリをアップロード
+3. `atsumo/homebrew-tap` リポジトリを作り Formula を配置
+
+進めますか？
