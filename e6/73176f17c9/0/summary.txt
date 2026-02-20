@@ -1,0 +1,36 @@
+All changes are in place. Here's a summary of everything implemented:
+
+## Summary
+
+### Step 0: Git History Cleanup
+- Squashed all 13 commits into one clean commit: `"Initial implementation of voy TUI file manager"`
+- **Force push pending** - run `git push --force origin main` when ready
+
+### Step 1: Git Status Integration
+- **`src/git/status.ts`** (new) — Runs `git status --porcelain=v1 -z` and `git rev-parse --abbrev-ref HEAD` via `Bun.spawn`, with 5s TTL cache
+- **`src/state/types.ts`** — Added `gitStatus?`/`gitStaged?` to `FileEntry`, `GitInfo` interface, `SET_GIT_INFO` action, extended `PreviewContent.type`
+- **`src/state/reducer.ts`** — Added `SET_GIT_INFO` case
+- **`src/state/context.tsx`** — Added initial `git` state
+- **`src/hooks/useFileSystem.ts`** — Enriches files with git status after `readDirectory()`
+- **`src/components/file-list/FileItem.tsx`** — Shows `M`/`A`/`?`/`D` indicators with colors (yellow/green/gray/red)
+- **`src/components/layout/StatusBar.tsx`** — Shows `[branch-name]` in green
+- **`src/utils/colors.ts`** — Added git status color exports
+
+### Step 2: Git Operations Keybindings
+- **`src/git/operations.ts`** (new) — `gitAdd`, `gitCommit`, `gitPush`, `gitDiff`, `gitLog`
+- **`src/keybindings/definitions.ts`** — `ga` (stage), `gc` (commit), `gp` (push), `gd` (diff→preview), `gl` (log→preview)
+
+### Step 3: Preview Enhancement
+- **`src/components/preview/DiffPreview.tsx`** (new) — `+` green, `-` red, `@@` cyan, `diff --git` yellow bold
+- **`src/components/preview/GitLogPreview.tsx`** (new) — Graph/hash yellow, refs cyan
+- **`src/utils/syntax.ts`** (new) — Regex-based highlighting for `.ts/.tsx/.js/.jsx` (keywords→cyan), `.py` (keywords→magenta), `.json` (keys→cyan), `.md` (headings→blue bold, lists→yellow)
+- **`src/components/preview/TextPreview.tsx`** — Accepts `fileName` prop, applies syntax highlighting
+- **`src/components/layout/PreviewPane.tsx`** — Added `diff`, `gitlog`, `github-issues`, `github-prs` cases
+- **`src/fs/preview.ts`** — Passes `fileName` to text preview
+
+### Step 4: GitHub CLI Integration
+- **`src/git/github.ts`** (new) — `getIssueList`, `getPRList`, `openInBrowser` via `gh` CLI
+- **`src/components/preview/GitHubPreview.tsx`** (new) — Issue/PR display with colored number prefixes
+- **`src/keybindings/definitions.ts`** — `gi` (issues), `gP` (PRs), `go` (browse)
+
+All 77 tests pass, build succeeds. Would you like me to commit these changes?

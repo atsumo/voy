@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "e673176f17c9",
+  "strategy": "auto-commit",
+  "branch": "feature/git-status",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/__tests__/reducer.test.ts",
+    "src/components/file-list/FileItem.tsx",
+    "src/components/layout/PreviewPane.tsx",
+    "src/components/layout/StatusBar.tsx",
+    "src/components/preview/DiffPreview.tsx",
+    "src/components/preview/GitHubPreview.tsx",
+    "src/components/preview/GitLogPreview.tsx",
+    "src/components/preview/TextPreview.tsx",
+    "src/fs/preview.ts",
+    "src/git/github.ts",
+    "src/git/operations.ts",
+    "src/git/status.ts",
+    "src/hooks/useFileSystem.ts",
+    "src/keybindings/definitions.ts",
+    "src/state/context.tsx",
+    "src/state/reducer.ts",
+    "src/state/types.ts",
+    "src/utils/colors.ts",
+    "src/utils/syntax.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e6/73176f17c9/0/metadata.json",
+      "transcript": "/e6/73176f17c9/0/full.jsonl",
+      "context": "",
+      "content_hash": "/e6/73176f17c9/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 49,
+    "cache_creation_tokens": 80527,
+    "cache_read_tokens": 2683846,
+    "output_tokens": 12329,
+    "api_call_count": 47
+  }
+}
