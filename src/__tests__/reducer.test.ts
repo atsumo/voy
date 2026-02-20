@@ -21,6 +21,8 @@ function createState(overrides?: Partial<AppState>): AppState {
     sort: { field: "name", order: "asc" },
     showHidden: false,
     visualAnchor: 0,
+    previewScroll: 0,
+    previewSelectedLines: new Set(),
     ...overrides,
   };
 }
@@ -225,6 +227,126 @@ describe("appReducer", () => {
       expect(next.showHidden).toBe(true);
       const next2 = appReducer(next, { type: "TOGGLE_HIDDEN" });
       expect(next2.showHidden).toBe(false);
+    });
+  });
+
+  describe("MOVE_PREVIEW_SCROLL", () => {
+    test("scrolls down", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2\nline3\nline4\nline5" },
+        previewScroll: 0,
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: 2 });
+      expect(next.previewScroll).toBe(2);
+    });
+
+    test("scrolls up", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2\nline3" },
+        previewScroll: 2,
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: -1 });
+      expect(next.previewScroll).toBe(1);
+    });
+
+    test("clamps at top", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2" },
+        previewScroll: 0,
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: -10 });
+      expect(next.previewScroll).toBe(0);
+    });
+
+    test("clamps at bottom", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2\nline3" },
+        previewScroll: 1,
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: 100 });
+      expect(next.previewScroll).toBe(2); // 3 lines, max index = 2
+    });
+  });
+
+  describe("SET_PREVIEW_SCROLL", () => {
+    test("sets scroll position", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2\nline3\nline4" },
+        previewScroll: 0,
+      });
+      const next = appReducer(state, { type: "SET_PREVIEW_SCROLL", index: 3 });
+      expect(next.previewScroll).toBe(3);
+    });
+
+    test("clamps out of range", () => {
+      const state = createState({
+        preview: { type: "text", content: "line1\nline2" },
+        previewScroll: 0,
+      });
+      const next = appReducer(state, { type: "SET_PREVIEW_SCROLL", index: 100 });
+      expect(next.previewScroll).toBe(1);
+    });
+  });
+
+  describe("TOGGLE_PREVIEW_LINE_SELECTION", () => {
+    test("adds line to selection", () => {
+      const state = createState();
+      const next = appReducer(state, { type: "TOGGLE_PREVIEW_LINE_SELECTION", line: 5 });
+      expect(next.previewSelectedLines.has(5)).toBe(true);
+    });
+
+    test("removes line from selection", () => {
+      const state = createState({ previewSelectedLines: new Set([5, 6]) });
+      const next = appReducer(state, { type: "TOGGLE_PREVIEW_LINE_SELECTION", line: 5 });
+      expect(next.previewSelectedLines.has(5)).toBe(false);
+      expect(next.previewSelectedLines.has(6)).toBe(true);
+    });
+  });
+
+  describe("SELECT_PREVIEW_LINE_RANGE", () => {
+    test("selects range", () => {
+      const state = createState();
+      const next = appReducer(state, { type: "SELECT_PREVIEW_LINE_RANGE", from: 2, to: 5 });
+      expect([...next.previewSelectedLines].sort()).toEqual([2, 3, 4, 5]);
+    });
+
+    test("selects range backward", () => {
+      const state = createState();
+      const next = appReducer(state, { type: "SELECT_PREVIEW_LINE_RANGE", from: 5, to: 2 });
+      expect([...next.previewSelectedLines].sort()).toEqual([2, 3, 4, 5]);
+    });
+  });
+
+  describe("CLEAR_PREVIEW_SELECTION", () => {
+    test("clears preview selection", () => {
+      const state = createState({ previewSelectedLines: new Set([1, 2, 3]) });
+      const next = appReducer(state, { type: "CLEAR_PREVIEW_SELECTION" });
+      expect(next.previewSelectedLines.size).toBe(0);
+    });
+  });
+
+  describe("SET_MODE with preview reset", () => {
+    test("resets preview state when leaving preview mode", () => {
+      const state = createState({
+        mode: "preview",
+        previewScroll: 10,
+        previewSelectedLines: new Set([1, 2, 3]),
+      });
+      const next = appReducer(state, { type: "SET_MODE", mode: "normal" });
+      expect(next.mode).toBe("normal");
+      expect(next.previewScroll).toBe(0);
+      expect(next.previewSelectedLines.size).toBe(0);
+    });
+
+    test("does not reset preview state when staying in preview mode", () => {
+      const state = createState({
+        mode: "preview",
+        previewScroll: 10,
+        previewSelectedLines: new Set([1, 2, 3]),
+      });
+      const next = appReducer(state, { type: "SET_MODE", mode: "preview" });
+      expect(next.previewScroll).toBe(10);
+      expect(next.previewSelectedLines.size).toBe(3);
     });
   });
 });

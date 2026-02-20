@@ -20,6 +20,8 @@ const initialState: AppState = {
   sort: { field: "name", order: "asc" },
   showHidden: false,
   visualAnchor: 0,
+  previewScroll: 0,
+  previewSelectedLines: new Set(),
 };
 
 const AppStateContext = createContext<AppState>(initialState);

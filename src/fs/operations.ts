@@ -120,3 +120,19 @@ export async function createDirectory(dirPath: string): Promise<void> {
 export async function createFile(filePath: string): Promise<void> {
   await Bun.write(filePath, "");
 }
+
+export function openInEditor(
+  filePath: string,
+  editor: string,
+  line?: number,
+): void {
+  const editorParts = editor.split(/\s+/);
+  const args = line
+    ? [...editorParts, `+${line}`, filePath]
+    : [...editorParts, filePath];
+  Bun.spawnSync(args, {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+}

@@ -12,11 +12,21 @@ interface PreviewPaneProps {
 export function PreviewPane({ height, width }: PreviewPaneProps) {
   const state = useAppState();
   const { preview } = state;
+  const isPreviewMode = state.mode === "preview";
 
   const content = (() => {
     switch (preview.type) {
       case "text":
-        return <TextPreview content={preview.content} height={height} width={width - 1} />;
+        return (
+          <TextPreview
+            content={preview.content}
+            height={height}
+            width={width - 1}
+            scrollOffset={isPreviewMode ? state.previewScroll : undefined}
+            selectedLines={isPreviewMode ? state.previewSelectedLines : undefined}
+            cursorLine={isPreviewMode ? state.previewScroll : undefined}
+          />
+        );
       case "directory":
         return (
           <DirectoryPreview
@@ -45,7 +55,7 @@ export function PreviewPane({ height, width }: PreviewPaneProps) {
       borderTop={false}
       borderBottom={false}
       borderRight={false}
-      borderColor="gray"
+      borderColor={isPreviewMode ? "cyan" : "gray"}
     >
       {content}
     </Box>

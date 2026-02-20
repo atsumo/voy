@@ -209,6 +209,29 @@ export function createDefaultBindings(): KeyBindingRegistry {
     },
   });
 
+  // Enter preview mode (single 'p' - activates on timeout when text preview is showing)
+  register(registry, "normal", {
+    keys: ["p"],
+    description: "Enter preview mode",
+    handler: ({ state, dispatch }) => {
+      if (state.preview.type === "text") {
+        dispatch({ type: "SET_MODE", mode: "preview" });
+      }
+    },
+  });
+
+  // Open in editor
+  register(registry, "normal", {
+    keys: ["e"],
+    description: "Open in editor",
+    handler: ({ state, openEditor }) => {
+      const file = state.files[state.cursor];
+      if (file && !file.isDirectory) {
+        openEditor(file.path);
+      }
+    },
+  });
+
   // Rename
   register(registry, "normal", {
     keys: ["r"],
@@ -354,6 +377,147 @@ export function createDefaultBindings(): KeyBindingRegistry {
     handler: ({ dispatch }) => {
       dispatch({ type: "SET_MODE", mode: "normal" });
     },
+  });
+
+  // ── Preview mode ────────────────────────────────
+
+  register(registry, "preview", {
+    keys: ["j"],
+    description: "Scroll down",
+    handler: ({ dispatch, count }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: count || 1 }),
+  });
+
+  register(registry, "preview", {
+    keys: ["down"],
+    description: "Scroll down",
+    handler: ({ dispatch, count }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: count || 1 }),
+  });
+
+  register(registry, "preview", {
+    keys: ["k"],
+    description: "Scroll up",
+    handler: ({ dispatch, count }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -(count || 1) }),
+  });
+
+  register(registry, "preview", {
+    keys: ["up"],
+    description: "Scroll up",
+    handler: ({ dispatch, count }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -(count || 1) }),
+  });
+
+  register(registry, "preview", {
+    keys: ["C-d"],
+    description: "Half page down",
+    handler: ({ dispatch }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: 15 }),
+  });
+
+  register(registry, "preview", {
+    keys: ["C-u"],
+    description: "Half page up",
+    handler: ({ dispatch }) =>
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -15 }),
+  });
+
+  register(registry, "preview", {
+    keys: ["g", "g"],
+    description: "Go to first line",
+    handler: ({ dispatch }) =>
+      dispatch({ type: "SET_PREVIEW_SCROLL", index: 0 }),
+  });
+
+  register(registry, "preview", {
+    keys: ["G"],
+    description: "Go to last line",
+    handler: ({ state, dispatch }) => {
+      const totalLines = state.preview.content.split("\n").length;
+      dispatch({ type: "SET_PREVIEW_SCROLL", index: totalLines - 1 });
+    },
+  });
+
+  register(registry, "preview", {
+    keys: [" "],
+    description: "Toggle line selection",
+    handler: ({ state, dispatch }) => {
+      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewScroll });
+      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: 1 });
+    },
+  });
+
+  register(registry, "preview", {
+    keys: ["v"],
+    description: "Visual line selection toggle",
+    handler: ({ state, dispatch }) => {
+      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewScroll });
+    },
+  });
+
+  register(registry, "preview", {
+    keys: ["V"],
+    description: "Select all / deselect all lines",
+    handler: ({ state, dispatch }) => {
+      if (state.previewSelectedLines.size > 0) {
+        dispatch({ type: "CLEAR_PREVIEW_SELECTION" });
+      } else {
+        const totalLines = state.preview.content.split("\n").length;
+        dispatch({ type: "SELECT_PREVIEW_LINE_RANGE", from: 0, to: totalLines - 1 });
+      }
+    },
+  });
+
+  register(registry, "preview", {
+    keys: ["y"],
+    description: "Copy selected lines to clipboard",
+    handler: ({ state, dispatch }) => {
+      const lines = state.preview.content.split("\n");
+      const selectedLines = [...state.previewSelectedLines].sort((a, b) => a - b);
+      const text =
+        selectedLines.length > 0
+          ? selectedLines.map((i) => lines[i] ?? "").join("\n")
+          : lines[state.previewScroll] ?? "";
+      try {
+        Bun.spawnSync(["pbcopy"], {
+          stdin: new TextEncoder().encode(text),
+        });
+        const count = selectedLines.length || 1;
+        dispatch({
+          type: "SET_ERROR",
+          error: `${count} line(s) copied`,
+        });
+        dispatch({ type: "CLEAR_PREVIEW_SELECTION" });
+      } catch {
+        dispatch({ type: "SET_ERROR", error: "Copy failed" });
+      }
+    },
+  });
+
+  register(registry, "preview", {
+    keys: ["e"],
+    description: "Open in editor",
+    handler: ({ state, openEditor }) => {
+      const file = state.files[state.cursor];
+      if (file && !file.isDirectory) {
+        openEditor(file.path, state.previewScroll + 1);
+      }
+    },
+  });
+
+  register(registry, "preview", {
+    keys: ["q"],
+    description: "Exit preview mode",
+    handler: ({ dispatch }) =>
+      dispatch({ type: "SET_MODE", mode: "normal" }),
+  });
+
+  register(registry, "preview", {
+    keys: ["escape"],
+    description: "Exit preview mode",
+    handler: ({ dispatch }) =>
+      dispatch({ type: "SET_MODE", mode: "normal" }),
   });
 
   return registry;

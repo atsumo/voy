@@ -5,6 +5,9 @@ import { useFileSystem } from "./hooks/useFileSystem.ts";
 import { useNavigation } from "./hooks/useNavigation.ts";
 import { usePreview } from "./hooks/usePreview.ts";
 import { useKeyBindings } from "./hooks/useKeyBindings.ts";
+import { loadConfigSync, ConfigProvider } from "./config/config.ts";
+
+const config = loadConfigSync();
 
 function AppInner() {
   const { refresh } = useFileSystem();
@@ -17,8 +20,10 @@ function AppInner() {
 
 export function App() {
   return (
-    <AppProvider>
-      <AppInner />
-    </AppProvider>
+    <ConfigProvider value={config}>
+      <AppProvider>
+        <AppInner />
+      </AppProvider>
+    </ConfigProvider>
   );
 }

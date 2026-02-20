@@ -1,4 +1,4 @@
-export type Mode = "normal" | "command" | "search" | "visual" | "prompt";
+export type Mode = "normal" | "command" | "search" | "visual" | "prompt" | "preview";
 
 export type SortField = "name" | "size" | "modified";
 export type SortOrder = "asc" | "desc";
@@ -54,6 +54,8 @@ export interface AppState {
   sort: { field: SortField; order: SortOrder };
   showHidden: boolean;
   visualAnchor: number;
+  previewScroll: number;
+  previewSelectedLines: Set<number>;
 }
 
 export type AppAction =
@@ -76,4 +78,9 @@ export type AppAction =
   | { type: "SET_PROMPT"; prompt: PromptState | null }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "TOGGLE_HIDDEN" }
-  | { type: "SET_VISUAL_ANCHOR"; index: number };
+  | { type: "SET_VISUAL_ANCHOR"; index: number }
+  | { type: "MOVE_PREVIEW_SCROLL"; delta: number }
+  | { type: "SET_PREVIEW_SCROLL"; index: number }
+  | { type: "TOGGLE_PREVIEW_LINE_SELECTION"; line: number }
+  | { type: "SELECT_PREVIEW_LINE_RANGE"; from: number; to: number }
+  | { type: "CLEAR_PREVIEW_SELECTION" };

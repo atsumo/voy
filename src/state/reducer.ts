@@ -44,12 +44,21 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "SET_PARENT_CURSOR":
       return { ...state, parentCursor: action.index };
 
-    case "SET_MODE":
+    case "SET_MODE": {
+      const resetPreview =
+        state.mode === "preview" && action.mode !== "preview";
       return {
         ...state,
         mode: action.mode,
-        commandInput: action.mode === "command" || action.mode === "search" ? "" : state.commandInput,
+        commandInput:
+          action.mode === "command" || action.mode === "search"
+            ? ""
+            : state.commandInput,
+        ...(resetPreview
+          ? { previewScroll: 0, previewSelectedLines: new Set<number>() }
+          : {}),
       };
+    }
 
     case "TOGGLE_SELECTION": {
       const newSelected = new Set(state.selectedIndices);
@@ -104,6 +113,47 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case "SET_VISUAL_ANCHOR":
       return { ...state, visualAnchor: action.index };
+
+    case "MOVE_PREVIEW_SCROLL": {
+      const totalLines = state.preview.content.split("\n").length;
+      const newScroll = Math.max(
+        0,
+        Math.min(totalLines - 1, state.previewScroll + action.delta),
+      );
+      return { ...state, previewScroll: newScroll };
+    }
+
+    case "SET_PREVIEW_SCROLL": {
+      const totalLines = state.preview.content.split("\n").length;
+      const newScroll = Math.max(
+        0,
+        Math.min(totalLines - 1, action.index),
+      );
+      return { ...state, previewScroll: newScroll };
+    }
+
+    case "TOGGLE_PREVIEW_LINE_SELECTION": {
+      const newSelected = new Set(state.previewSelectedLines);
+      if (newSelected.has(action.line)) {
+        newSelected.delete(action.line);
+      } else {
+        newSelected.add(action.line);
+      }
+      return { ...state, previewSelectedLines: newSelected };
+    }
+
+    case "SELECT_PREVIEW_LINE_RANGE": {
+      const newSelected = new Set(state.previewSelectedLines);
+      const start = Math.min(action.from, action.to);
+      const end = Math.max(action.from, action.to);
+      for (let i = start; i <= end; i++) {
+        newSelected.add(i);
+      }
+      return { ...state, previewSelectedLines: newSelected };
+    }
+
+    case "CLEAR_PREVIEW_SELECTION":
+      return { ...state, previewSelectedLines: new Set() };
 
     default:
       return state;

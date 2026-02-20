@@ -1,10 +1,11 @@
 import { useCallback, useRef } from "react";
 import { useInput, useApp } from "ink";
 import { useAppState, useAppDispatch } from "../state/context.tsx";
+import { useConfig } from "../config/config.ts";
 import { parseInput, keyToString, createKeyBuffer, type KeyBuffer } from "../keybindings/parser.ts";
-import { findMatch, type KeyActionContext } from "../keybindings/registry.ts";
+import { findMatch, findExactMatch, type KeyActionContext } from "../keybindings/registry.ts";
 import { createDefaultBindings } from "../keybindings/definitions.ts";
-import { createDirectory, createFile } from "../fs/operations.ts";
+import { openInEditor, createDirectory, createFile } from "../fs/operations.ts";
 import { resolve, join } from "node:path";
 import type { Key } from "ink";
 
@@ -20,9 +21,31 @@ interface UseKeyBindingsOptions {
 export function useKeyBindings(options: UseKeyBindingsOptions) {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const config = useConfig();
   const { exit } = useApp();
   const registryRef = useRef(createDefaultBindings());
   const bufferRef = useRef<KeyBuffer>(createKeyBuffer());
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const buildContext = useCallback(
+    (count: number): KeyActionContext => ({
+      state: stateRef.current,
+      dispatch,
+      count,
+      navigate: options.navigate,
+      enterDirectory: options.enterDirectory,
+      parentDirectory: options.parentDirectory,
+      refresh: options.refresh,
+      exit,
+      config,
+      openEditor: (filePath: string, line?: number) => {
+        openInEditor(filePath, config.editor.command, line);
+        options.refresh();
+      },
+    }),
+    [dispatch, exit, options, config],
+  );
 
   const handleNormalInput = useCallback(
     (input: string, key: Key) => {
@@ -44,26 +67,30 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
 
       buffer.keys.push(keyStr);
 
-      const match = findMatch(registryRef.current, state.mode, buffer.keys);
+      const match = findMatch(registryRef.current, stateRef.current.mode, buffer.keys);
 
       if (match && match.exact) {
         const count = buffer.count ? parseInt(buffer.count, 10) : 0;
-        const ctx: KeyActionContext = {
-          state,
-          dispatch,
-          count,
-          navigate: options.navigate,
-          enterDirectory: options.enterDirectory,
-          parentDirectory: options.parentDirectory,
-          refresh: options.refresh,
-          exit,
-        };
+        const ctx = buildContext(count);
         match.action.handler(ctx);
         buffer.keys = [];
         buffer.count = "";
       } else if (match && !match.exact) {
         // Partial match - wait for more keys
+        // On timeout, check for exact match before clearing
+        const savedKeys = [...buffer.keys];
+        const savedCount = buffer.count;
         buffer.timeout = setTimeout(() => {
+          const exact = findExactMatch(
+            registryRef.current,
+            stateRef.current.mode,
+            savedKeys,
+          );
+          if (exact) {
+            const count = savedCount ? parseInt(savedCount, 10) : 0;
+            const ctx = buildContext(count);
+            exact.handler(ctx);
+          }
           buffer.keys = [];
           buffer.count = "";
         }, TIMEOUT_MS);
@@ -73,7 +100,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
         buffer.count = "";
       }
     },
-    [state, dispatch, exit, options],
+    [buildContext],
   );
 
   const handleCommandInput = useCallback(
@@ -85,16 +112,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
       }
 
       if (key.return) {
-        executeCommand(state.commandInput, {
-          state,
-          dispatch,
-          count: 0,
-          navigate: options.navigate,
-          enterDirectory: options.enterDirectory,
-          parentDirectory: options.parentDirectory,
-          refresh: options.refresh,
-          exit,
-        });
+        executeCommand(state.commandInput, buildContext(0));
         dispatch({ type: "SET_MODE", mode: "normal" });
         dispatch({ type: "SET_COMMAND_INPUT", input: "" });
         return;
@@ -114,7 +132,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
         input: state.commandInput + input,
       });
     },
-    [state, dispatch, exit, options],
+    [state, dispatch, buildContext],
   );
 
   const handleSearchInput = useCallback(
@@ -193,6 +211,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
     switch (state.mode) {
       case "normal":
       case "visual":
+      case "preview":
         handleNormalInput(input, key);
         break;
       case "command":

@@ -1,6 +1,7 @@
 import type { Mode } from "../state/types.ts";
 import type { Dispatch } from "react";
 import type { AppState, AppAction } from "../state/types.ts";
+import type { VoyConfig } from "../config/config.ts";
 
 export interface KeyAction {
   keys: string[];
@@ -17,6 +18,8 @@ export interface KeyActionContext {
   parentDirectory: () => void;
   refresh: () => void;
   exit: () => void;
+  config: VoyConfig;
+  openEditor: (filePath: string, line?: number) => void;
 }
 
 export interface KeyBindingRegistry {
@@ -45,16 +48,46 @@ export function findMatch(
   const bindings = registry.bindings.get(mode);
   if (!bindings) return null;
 
+  let exactMatch: KeyAction | null = null;
+  let partialMatch: KeyAction | null = null;
+
   for (const action of bindings) {
     if (arraysEqual(action.keys, keySequence)) {
-      return { action, exact: true };
+      exactMatch = action;
     }
     // Check if current sequence is a prefix of some binding
     if (
       action.keys.length > keySequence.length &&
       arraysEqual(action.keys.slice(0, keySequence.length), keySequence)
     ) {
-      return { action, exact: false };
+      partialMatch = action;
+    }
+  }
+
+  // If there's a partial match, prefer waiting for more keys
+  // The timeout handler will execute the exact match if no more keys come
+  if (partialMatch) {
+    return { action: exactMatch ?? partialMatch, exact: false };
+  }
+
+  if (exactMatch) {
+    return { action: exactMatch, exact: true };
+  }
+
+  return null;
+}
+
+export function findExactMatch(
+  registry: KeyBindingRegistry,
+  mode: Mode,
+  keySequence: string[],
+): KeyAction | null {
+  const bindings = registry.bindings.get(mode);
+  if (!bindings) return null;
+
+  for (const action of bindings) {
+    if (arraysEqual(action.keys, keySequence)) {
+      return action;
     }
   }
 

@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { parseInput, keyToString, createKeyBuffer } from "../keybindings/parser.ts";
-import { createRegistry, register, findMatch } from "../keybindings/registry.ts";
+import { createRegistry, register, findMatch, findExactMatch } from "../keybindings/registry.ts";
 import { createDefaultBindings } from "../keybindings/definitions.ts";
 import type { Key } from "ink";
 
@@ -154,6 +154,49 @@ describe("KeyBindingRegistry", () => {
     const match = findMatch(registry, "command", ["j"]);
     expect(match).toBeNull();
   });
+
+  test("prefers partial match when both exact and partial exist", () => {
+    const registry = createRegistry();
+    register(registry, "normal", {
+      keys: ["p", "p"],
+      description: "paste",
+      handler: () => {},
+    });
+    register(registry, "normal", {
+      keys: ["p"],
+      description: "preview",
+      handler: () => {},
+    });
+
+    // Pressing "p" should return partial (wait for more keys)
+    const match = findMatch(registry, "normal", ["p"]);
+    expect(match).not.toBeNull();
+    expect(match!.exact).toBe(false);
+
+    // Pressing "pp" should return exact match for paste
+    const exact = findMatch(registry, "normal", ["p", "p"]);
+    expect(exact).not.toBeNull();
+    expect(exact!.exact).toBe(true);
+    expect(exact!.action.description).toBe("paste");
+  });
+
+  test("findExactMatch returns exact match even when partial exists", () => {
+    const registry = createRegistry();
+    register(registry, "normal", {
+      keys: ["p", "p"],
+      description: "paste",
+      handler: () => {},
+    });
+    register(registry, "normal", {
+      keys: ["p"],
+      description: "preview",
+      handler: () => {},
+    });
+
+    const exact = findExactMatch(registry, "normal", ["p"]);
+    expect(exact).not.toBeNull();
+    expect(exact!.description).toBe("preview");
+  });
 });
 
 describe("createDefaultBindings", () => {
@@ -199,5 +242,57 @@ describe("createDefaultBindings", () => {
     const exact = findMatch(registry, "normal", ["y", "y"]);
     expect(exact).not.toBeNull();
     expect(exact!.exact).toBe(true);
+  });
+
+  test("p binding exists (preview mode entry)", () => {
+    const registry = createDefaultBindings();
+    const exact = findExactMatch(registry, "normal", ["p"]);
+    expect(exact).not.toBeNull();
+    expect(exact!.description).toBe("Enter preview mode");
+  });
+
+  test("e binding exists (open in editor)", () => {
+    const registry = createDefaultBindings();
+    const match = findMatch(registry, "normal", ["e"]);
+    expect(match).not.toBeNull();
+    expect(match!.exact).toBe(true);
+    expect(match!.action.description).toBe("Open in editor");
+  });
+
+  test("has preview mode bindings", () => {
+    const registry = createDefaultBindings();
+    expect(registry.bindings.has("preview")).toBe(true);
+    const previewBindings = registry.bindings.get("preview")!;
+    expect(previewBindings.length).toBeGreaterThan(5);
+  });
+
+  test("preview mode j binding exists", () => {
+    const registry = createDefaultBindings();
+    const match = findMatch(registry, "preview", ["j"]);
+    expect(match).not.toBeNull();
+    expect(match!.exact).toBe(true);
+  });
+
+  test("preview mode q exits preview", () => {
+    const registry = createDefaultBindings();
+    const match = findMatch(registry, "preview", ["q"]);
+    expect(match).not.toBeNull();
+    expect(match!.exact).toBe(true);
+    expect(match!.action.description).toBe("Exit preview mode");
+  });
+
+  test("preview mode gg binding exists", () => {
+    const registry = createDefaultBindings();
+    const exact = findMatch(registry, "preview", ["g", "g"]);
+    expect(exact).not.toBeNull();
+    expect(exact!.exact).toBe(true);
+  });
+
+  test("preview mode y binding copies lines", () => {
+    const registry = createDefaultBindings();
+    const match = findMatch(registry, "preview", ["y"]);
+    expect(match).not.toBeNull();
+    expect(match!.exact).toBe(true);
+    expect(match!.action.description).toBe("Copy selected lines to clipboard");
   });
 });
