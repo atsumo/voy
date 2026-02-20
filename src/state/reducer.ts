@@ -2,7 +2,11 @@ import type { AppState, AppAction } from "./types.ts";
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case "SET_PATH":
+    case "SET_PATH": {
+      const newHistory =
+        action.path !== state.currentPath
+          ? [...state.pathHistory, state.currentPath]
+          : state.pathHistory;
       return {
         ...state,
         currentPath: action.path,
@@ -10,7 +14,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         selectedIndices: new Set(),
         search: null,
         error: null,
+        pathHistory: newHistory,
       };
+    }
 
     case "SET_FILES":
       return {
@@ -55,7 +61,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
             ? ""
             : state.commandInput,
         ...(resetPreview
-          ? { previewScroll: 0, previewCursor: 0, previewSelectedLines: new Set<number>() }
+          ? { previewScroll: 0, previewCursor: 0, previewVisualAnchor: null, previewSelectedLines: new Set<number>() }
           : {}),
       };
     }
@@ -126,7 +132,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       } else if (newCursor > newScroll + action.height - 1) {
         newScroll = newCursor - action.height + 1;
       }
-      return { ...state, previewCursor: newCursor, previewScroll: newScroll };
+      const result: AppState = { ...state, previewCursor: newCursor, previewScroll: newScroll };
+      if (state.previewVisualAnchor !== null) {
+        const start = Math.min(state.previewVisualAnchor, newCursor);
+        const end = Math.max(state.previewVisualAnchor, newCursor);
+        const selected = new Set<number>();
+        for (let i = start; i <= end; i++) selected.add(i);
+        result.previewSelectedLines = selected;
+      }
+      return result;
     }
 
     case "SET_PREVIEW_CURSOR": {
@@ -141,8 +155,19 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       } else if (newCursor > newScroll + action.height - 1) {
         newScroll = newCursor - action.height + 1;
       }
-      return { ...state, previewCursor: newCursor, previewScroll: newScroll };
+      const result: AppState = { ...state, previewCursor: newCursor, previewScroll: newScroll };
+      if (state.previewVisualAnchor !== null) {
+        const start = Math.min(state.previewVisualAnchor, newCursor);
+        const end = Math.max(state.previewVisualAnchor, newCursor);
+        const selected = new Set<number>();
+        for (let i = start; i <= end; i++) selected.add(i);
+        result.previewSelectedLines = selected;
+      }
+      return result;
     }
+
+    case "SET_PREVIEW_VISUAL_ANCHOR":
+      return { ...state, previewVisualAnchor: action.anchor };
 
     case "TOGGLE_PREVIEW_LINE_SELECTION": {
       const newSelected = new Set(state.previewSelectedLines);
@@ -166,6 +191,20 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case "CLEAR_PREVIEW_SELECTION":
       return { ...state, previewSelectedLines: new Set() };
+
+    case "POP_PATH_HISTORY": {
+      if (state.pathHistory.length === 0) return state;
+      const newHistory = [...state.pathHistory];
+      const prevPath = newHistory.pop()!;
+      return {
+        ...state,
+        currentPath: prevPath,
+        pathHistory: newHistory,
+        cursor: 0,
+        selectedIndices: new Set(),
+        search: null,
+      };
+    }
 
     default:
       return state;

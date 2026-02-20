@@ -1,10 +1,61 @@
 import { readdir, lstat } from "node:fs/promises";
-import { join } from "node:path";
+import { join, extname } from "node:path";
 import type { FileEntry, PreviewContent } from "../state/types.ts";
 import { formatPermissions } from "../utils/formatting.ts";
+import { createHighlighter, type Highlighter } from "shiki";
 
 const MAX_PREVIEW_LINES = 100;
 const MAX_FILE_SIZE = 1024 * 256; // 256KB
+
+const EXT_TO_LANG: Record<string, string> = {
+  ".ts": "typescript",
+  ".tsx": "tsx",
+  ".js": "javascript",
+  ".jsx": "jsx",
+  ".py": "python",
+  ".rs": "rust",
+  ".go": "go",
+  ".json": "json",
+  ".yaml": "yaml",
+  ".yml": "yaml",
+  ".md": "markdown",
+  ".sh": "shellscript",
+  ".bash": "shellscript",
+  ".zsh": "shellscript",
+  ".html": "html",
+  ".css": "css",
+  ".scss": "scss",
+  ".sql": "sql",
+  ".toml": "toml",
+  ".xml": "xml",
+  ".rb": "ruby",
+  ".java": "java",
+  ".c": "c",
+  ".cpp": "cpp",
+  ".h": "c",
+  ".hpp": "cpp",
+  ".swift": "swift",
+  ".kt": "kotlin",
+  ".lua": "lua",
+  ".php": "php",
+  ".vim": "viml",
+  ".dockerfile": "dockerfile",
+  ".graphql": "graphql",
+  ".vue": "vue",
+  ".svelte": "svelte",
+};
+
+let highlighterPromise: Promise<Highlighter> | null = null;
+
+function getHighlighter(): Promise<Highlighter> {
+  if (!highlighterPromise) {
+    highlighterPromise = createHighlighter({
+      themes: ["github-dark"],
+      langs: [...new Set(Object.values(EXT_TO_LANG))],
+    });
+  }
+  return highlighterPromise;
+}
 
 const BINARY_EXTENSIONS = new Set([
   ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg",
@@ -44,7 +95,22 @@ async function loadTextPreview(filePath: string): Promise<PreviewContent> {
   const file = Bun.file(filePath);
   const text = await file.text();
   const lines = text.split("\n").slice(0, MAX_PREVIEW_LINES);
-  return { type: "text", content: lines.join("\n") };
+  const content = lines.join("\n");
+
+  const ext = extname(filePath).toLowerCase();
+  const lang = EXT_TO_LANG[ext];
+  if (!lang) {
+    return { type: "text", content };
+  }
+
+  try {
+    const highlighter = await getHighlighter();
+    const ansi = highlighter.codeToAnsi(content, { lang, theme: "github-dark" });
+    const highlightedLines = ansi.split("\n");
+    return { type: "text", content, highlightedLines };
+  } catch {
+    return { type: "text", content };
+  }
 }
 
 async function loadDirectoryPreview(

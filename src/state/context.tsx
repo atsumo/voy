@@ -22,7 +22,9 @@ const initialState: AppState = {
   visualAnchor: 0,
   previewScroll: 0,
   previewCursor: 0,
+  previewVisualAnchor: null,
   previewSelectedLines: new Set(),
+  pathHistory: [],
 };
 
 const AppStateContext = createContext<AppState>(initialState);

@@ -22,6 +22,7 @@ export interface PreviewContent {
   type: "text" | "directory" | "binary" | "none" | "error";
   content: string;
   entries?: FileEntry[];
+  highlightedLines?: string[];
 }
 
 export interface SearchState {
@@ -56,7 +57,9 @@ export interface AppState {
   visualAnchor: number;
   previewScroll: number;
   previewCursor: number;
+  previewVisualAnchor: number | null;
   previewSelectedLines: Set<number>;
+  pathHistory: string[];
 }
 
 export type AppAction =
@@ -82,6 +85,8 @@ export type AppAction =
   | { type: "SET_VISUAL_ANCHOR"; index: number }
   | { type: "MOVE_PREVIEW_CURSOR"; delta: number; height: number }
   | { type: "SET_PREVIEW_CURSOR"; index: number; height: number }
+  | { type: "SET_PREVIEW_VISUAL_ANCHOR"; anchor: number | null }
   | { type: "TOGGLE_PREVIEW_LINE_SELECTION"; line: number }
   | { type: "SELECT_PREVIEW_LINE_RANGE"; from: number; to: number }
-  | { type: "CLEAR_PREVIEW_SELECTION" };
+  | { type: "CLEAR_PREVIEW_SELECTION" }
+  | { type: "POP_PATH_HISTORY" };

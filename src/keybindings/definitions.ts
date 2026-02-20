@@ -5,6 +5,7 @@ import {
   type KeyActionContext,
 } from "./registry.ts";
 import { join, basename } from "node:path";
+import { homedir } from "node:os";
 import {
   copyFiles,
   moveFiles,
@@ -13,6 +14,20 @@ import {
   createDirectory,
   createFile,
 } from "../fs/operations.ts";
+import type { AppState } from "../state/types.ts";
+
+function calcViewport(state: AppState, contentHeight: number) {
+  const visibleCount = Math.max(1, contentHeight);
+  let startIndex: number;
+  if (state.files.length <= visibleCount) {
+    startIndex = 0;
+  } else {
+    const half = Math.floor(visibleCount / 2);
+    startIndex = Math.max(0, state.cursor - half);
+    startIndex = Math.min(startIndex, state.files.length - visibleCount);
+  }
+  return { startIndex, visibleCount };
+}
 
 function enterOrPreview(ctx: KeyActionContext) {
   const file = ctx.state.files[ctx.state.cursor];
@@ -107,15 +122,83 @@ export function createDefaultBindings(): KeyBindingRegistry {
   register(registry, "normal", {
     keys: ["C-d"],
     description: "Half page down",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "MOVE_CURSOR", delta: 15 }),
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_CURSOR", delta: Math.floor(previewHeight / 2) }),
   });
 
   register(registry, "normal", {
     keys: ["C-u"],
     description: "Half page up",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "MOVE_CURSOR", delta: -15 }),
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_CURSOR", delta: -Math.floor(previewHeight / 2) }),
+  });
+
+  // Screen-relative movement
+  register(registry, "normal", {
+    keys: ["H"],
+    description: "Jump to top of screen",
+    handler: ({ state, dispatch, previewHeight }) => {
+      const { startIndex } = calcViewport(state, previewHeight);
+      dispatch({ type: "SET_CURSOR", index: startIndex });
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["M"],
+    description: "Jump to middle of screen",
+    handler: ({ state, dispatch, previewHeight }) => {
+      const { startIndex, visibleCount } = calcViewport(state, previewHeight);
+      const middleIndex = startIndex + Math.floor(visibleCount / 2);
+      dispatch({ type: "SET_CURSOR", index: middleIndex });
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["L"],
+    description: "Jump to bottom of screen",
+    handler: ({ state, dispatch, previewHeight }) => {
+      const { startIndex, visibleCount } = calcViewport(state, previewHeight);
+      dispatch({ type: "SET_CURSOR", index: startIndex + visibleCount - 1 });
+    },
+  });
+
+  // Full-page movement
+  register(registry, "normal", {
+    keys: ["C-f"],
+    description: "Full page down",
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_CURSOR", delta: previewHeight }),
+  });
+
+  register(registry, "normal", {
+    keys: ["C-b"],
+    description: "Full page up",
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_CURSOR", delta: -previewHeight }),
+  });
+
+  // Home directory
+  register(registry, "normal", {
+    keys: ["~"],
+    description: "Go to home directory",
+    handler: ({ navigate }) => navigate(homedir()),
+  });
+
+  // Parent directory alias
+  register(registry, "normal", {
+    keys: ["-"],
+    description: "Go to parent directory",
+    handler: ({ parentDirectory }) => parentDirectory(),
+  });
+
+  // Back to previous directory
+  register(registry, "normal", {
+    keys: ["C-o"],
+    description: "Go back to previous directory",
+    handler: ({ state, dispatch }) => {
+      if (state.pathHistory.length === 0) return;
+      dispatch({ type: "POP_PATH_HISTORY" });
+    },
   });
 
   // Selection
@@ -215,6 +298,125 @@ export function createDefaultBindings(): KeyBindingRegistry {
           type: "SET_ERROR",
           error: `Paste failed: ${err instanceof Error ? err.message : String(err)}`,
         });
+      }
+    },
+  });
+
+  // Cut (for move via pp)
+  register(registry, "normal", {
+    keys: ["x"],
+    description: "Cut (mark for move)",
+    handler: ({ state, dispatch }) => {
+      const indices =
+        state.selectedIndices.size > 0
+          ? [...state.selectedIndices]
+          : [state.cursor];
+      const files = indices.map((i) => state.files[i]!).filter(Boolean);
+      dispatch({ type: "SET_CLIPBOARD", clipboard: { operation: "cut", files } });
+      dispatch({ type: "CLEAR_SELECTION" });
+    },
+  });
+
+  // New file
+  register(registry, "normal", {
+    keys: ["o"],
+    description: "Create new file",
+    handler: ({ state, dispatch, refresh }) => {
+      dispatch({
+        type: "SET_PROMPT",
+        prompt: {
+          title: "New file:",
+          value: "",
+          onSubmit: async (value: string) => {
+            if (value) {
+              try {
+                await createFile(join(state.currentPath, value));
+                refresh();
+              } catch (err) {
+                dispatch({
+                  type: "SET_ERROR",
+                  error: `Create file failed: ${err instanceof Error ? err.message : String(err)}`,
+                });
+              }
+            }
+            dispatch({ type: "SET_PROMPT", prompt: null });
+          },
+        },
+      });
+    },
+  });
+
+  // New directory
+  register(registry, "normal", {
+    keys: ["O"],
+    description: "Create new directory",
+    handler: ({ state, dispatch, refresh }) => {
+      dispatch({
+        type: "SET_PROMPT",
+        prompt: {
+          title: "New directory:",
+          value: "",
+          onSubmit: async (value: string) => {
+            if (value) {
+              try {
+                await createDirectory(join(state.currentPath, value));
+                refresh();
+              } catch (err) {
+                dispatch({
+                  type: "SET_ERROR",
+                  error: `Create directory failed: ${err instanceof Error ? err.message : String(err)}`,
+                });
+              }
+            }
+            dispatch({ type: "SET_PROMPT", prompt: null });
+          },
+        },
+      });
+    },
+  });
+
+  // Delete (single key shortcut for dd)
+  register(registry, "normal", {
+    keys: ["D"],
+    description: "Delete selected files",
+    handler: ({ state, dispatch, refresh }) => {
+      const indices =
+        state.selectedIndices.size > 0
+          ? [...state.selectedIndices]
+          : [state.cursor];
+      const files = indices.map((i) => state.files[i]!).filter(Boolean);
+      dispatch({
+        type: "SET_PROMPT",
+        prompt: {
+          title: `Delete ${files.length} file(s)? (y/n)`,
+          value: "",
+          onSubmit: async (value: string) => {
+            if (value === "y" || value === "Y") {
+              try {
+                await deleteFiles(files);
+                refresh();
+              } catch (err) {
+                dispatch({
+                  type: "SET_ERROR",
+                  error: `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+                });
+              }
+            }
+            dispatch({ type: "SET_PROMPT", prompt: null });
+          },
+        },
+      });
+    },
+  });
+
+  // Open with system default
+  register(registry, "normal", {
+    keys: ["W"],
+    description: "Open with system default",
+    handler: ({ state }) => {
+      const file = state.files[state.cursor];
+      if (file) {
+        Bun.spawnSync(["open", file.path]);
       }
     },
   });
@@ -460,9 +662,17 @@ export function createDefaultBindings(): KeyBindingRegistry {
 
   register(registry, "preview", {
     keys: ["v"],
-    description: "Visual line selection toggle",
+    description: "Toggle visual line selection",
     handler: ({ state, dispatch }) => {
-      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewCursor });
+      if (state.previewVisualAnchor !== null) {
+        // Exit visual: keep selection, clear anchor
+        dispatch({ type: "SET_PREVIEW_VISUAL_ANCHOR", anchor: null });
+      } else {
+        // Enter visual: set anchor, select current line
+        dispatch({ type: "CLEAR_PREVIEW_SELECTION" });
+        dispatch({ type: "SET_PREVIEW_VISUAL_ANCHOR", anchor: state.previewCursor });
+        dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewCursor });
+      }
     },
   });
 
@@ -499,6 +709,7 @@ export function createDefaultBindings(): KeyBindingRegistry {
           error: `${count} line(s) copied`,
         });
         dispatch({ type: "CLEAR_PREVIEW_SELECTION" });
+        dispatch({ type: "SET_PREVIEW_VISUAL_ANCHOR", anchor: null });
       } catch {
         dispatch({ type: "SET_ERROR", error: "Copy failed" });
       }
@@ -525,9 +736,15 @@ export function createDefaultBindings(): KeyBindingRegistry {
 
   register(registry, "preview", {
     keys: ["escape"],
-    description: "Exit preview mode",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "SET_MODE", mode: "normal" }),
+    description: "Exit visual selection / Exit preview mode",
+    handler: ({ state, dispatch }) => {
+      if (state.previewVisualAnchor !== null) {
+        dispatch({ type: "SET_PREVIEW_VISUAL_ANCHOR", anchor: null });
+        dispatch({ type: "CLEAR_PREVIEW_SELECTION" });
+      } else {
+        dispatch({ type: "SET_MODE", mode: "normal" });
+      }
+    },
   });
 
   return registry;

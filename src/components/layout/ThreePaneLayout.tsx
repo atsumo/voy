@@ -6,12 +6,13 @@ import { CurrentPane } from "./CurrentPane.tsx";
 import { PreviewPane } from "./PreviewPane.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { CommandLine } from "../input/CommandLine.tsx";
+import { KeyHintBar } from "./KeyHintBar.tsx";
 
 export function ThreePaneLayout() {
   const { width, height } = useScreenSize();
 
-  // Reserve 2 rows: status bar + command line
-  const contentHeight = Math.max(1, height - 2);
+  // Reserve 3 rows: status bar + command line + key hint bar
+  const contentHeight = Math.max(1, height - 3);
 
   // Pane widths: ~20% parent, ~40% current, ~40% preview
   const parentWidth = Math.max(10, Math.floor(width * 0.2));
@@ -27,6 +28,7 @@ export function ThreePaneLayout() {
       </Box>
       <StatusBar width={width} />
       <CommandLine width={width} />
+      <KeyHintBar width={width} />
     </Box>
   );
 }

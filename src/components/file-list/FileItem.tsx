@@ -10,6 +10,7 @@ interface FileItemProps {
   isSelected: boolean;
   isSearchMatch: boolean;
   width: number;
+  dimmed?: boolean;
 }
 
 export function FileItem({
@@ -18,6 +19,7 @@ export function FileItem({
   isSelected,
   isSearchMatch,
   width,
+  dimmed = false,
 }: FileItemProps) {
   const color = colorize(entry);
   const icon = entry.isDirectory ? "/" : entry.isSymlink ? "@" : " ";
@@ -33,6 +35,17 @@ export function FileItem({
   displayName = displayName.padEnd(nameWidth);
 
   const prefix = isSelected ? "▌" : isCursor ? "▸" : " ";
+
+  // When dimmed (e.g. preview mode), show cursor row with subdued highlight
+  if (dimmed && isCursor) {
+    return (
+      <Text backgroundColor="gray" color="white">
+        <Text color="white">{prefix}</Text>
+        <Text>{displayName}{icon}</Text>
+        <Text> {sizeStr} {dateStr}</Text>
+      </Text>
+    );
+  }
 
   let bgColor: string | undefined;
   if (isCursor) bgColor = "white";

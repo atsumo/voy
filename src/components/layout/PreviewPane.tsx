@@ -25,6 +25,7 @@ export function PreviewPane({ height, width }: PreviewPaneProps) {
             scrollOffset={isPreviewMode ? state.previewScroll : undefined}
             selectedLines={isPreviewMode ? state.previewSelectedLines : undefined}
             cursorLine={isPreviewMode ? state.previewCursor : undefined}
+            highlightedLines={preview.highlightedLines}
           />
         );
       case "directory":

@@ -61,10 +61,10 @@ export function CommandLine({ width }: CommandLineProps) {
 
   if (state.mode === "preview") {
     const selectedCount = state.previewSelectedLines.size;
-    const modeLabel =
-      selectedCount > 0
-        ? `-- PREVIEW VISUAL -- (${selectedCount} lines)`
-        : "-- PREVIEW --";
+    const isVisual = state.previewVisualAnchor !== null;
+    const modeLabel = isVisual
+      ? `-- PREVIEW VISUAL -- (${selectedCount} lines)`
+      : "-- PREVIEW --";
     return (
       <Box width={width}>
         <Text color="cyan" bold>

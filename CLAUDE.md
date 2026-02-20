@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Yazi-style three-pane TUI file manager. Bun + Ink 6 (React 19) + TypeScript strict mode.
+Three-pane TUI file manager with Vim-style keybindings. Layout inspired by Yazi but keybindings differ. Bun + Ink 6 (React 19) + TypeScript strict mode.
 
 ## Commands
 
@@ -23,7 +23,7 @@ Entry: `src/index.tsx` → fullscreen-ink → `App` → `AppProvider` (React Con
 
 State: Context + useReducer (`src/state/`). Two contexts: `AppStateContext` (state) / `AppDispatchContext` (dispatch). Reducer in `reducer.ts`, types in `types.ts`.
 
-Modes: `normal` | `visual` | `command` | `search` | `prompt`
+Modes: `normal` | `visual` | `command` | `search` | `prompt` | `preview`
 
 Keybindings (`src/keybindings/`): Parser → Registry (per-mode, multi-key sequences with timeout, numeric prefix) → Definitions
 

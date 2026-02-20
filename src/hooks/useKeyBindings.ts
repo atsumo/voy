@@ -25,7 +25,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
   const config = useConfig();
   const { exit } = useApp();
   const { height: screenHeight } = useScreenSize();
-  const previewHeight = Math.max(1, screenHeight - 2);
+  const previewHeight = Math.max(1, screenHeight - 3);
   const registryRef = useRef(createDefaultBindings());
   const bufferRef = useRef<KeyBuffer>(createKeyBuffer());
   const stateRef = useRef(state);

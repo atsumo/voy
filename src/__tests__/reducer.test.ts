@@ -23,7 +23,9 @@ function createState(overrides?: Partial<AppState>): AppState {
     visualAnchor: 0,
     previewScroll: 0,
     previewCursor: 0,
+    previewVisualAnchor: null,
     previewSelectedLines: new Set(),
+    pathHistory: [],
     ...overrides,
   };
 }
@@ -55,6 +57,24 @@ describe("appReducer", () => {
       expect(next.selectedIndices.size).toBe(0);
       expect(next.search).toBeNull();
       expect(next.error).toBeNull();
+    });
+
+    test("pushes old path to pathHistory when path changes", () => {
+      const state = createState({ currentPath: "/old/path", pathHistory: [] });
+      const next = appReducer(state, { type: "SET_PATH", path: "/new/path" });
+      expect(next.pathHistory).toEqual(["/old/path"]);
+    });
+
+    test("accumulates pathHistory across navigations", () => {
+      const state = createState({ currentPath: "/a", pathHistory: ["/root"] });
+      const next = appReducer(state, { type: "SET_PATH", path: "/b" });
+      expect(next.pathHistory).toEqual(["/root", "/a"]);
+    });
+
+    test("does not push to pathHistory when path is the same", () => {
+      const state = createState({ currentPath: "/same", pathHistory: [] });
+      const next = appReducer(state, { type: "SET_PATH", path: "/same" });
+      expect(next.pathHistory).toEqual([]);
     });
   });
 
@@ -303,6 +323,42 @@ describe("appReducer", () => {
       expect(next.previewCursor).toBe(4);
       expect(next.previewScroll).toBe(2); // unchanged
     });
+
+    test("selects range when visual anchor is set", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 3,
+        previewVisualAnchor: 3,
+        previewSelectedLines: new Set([3]),
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 2, height: 10 });
+      expect(next.previewCursor).toBe(5);
+      expect([...next.previewSelectedLines].sort()).toEqual([3, 4, 5]);
+    });
+
+    test("selects range upward when visual anchor is set", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 5,
+        previewVisualAnchor: 5,
+        previewSelectedLines: new Set([5]),
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: -3, height: 10 });
+      expect(next.previewCursor).toBe(2);
+      expect([...next.previewSelectedLines].sort()).toEqual([2, 3, 4, 5]);
+    });
+
+    test("does not change selection when visual anchor is null", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4" },
+        previewCursor: 1,
+        previewVisualAnchor: null,
+        previewSelectedLines: new Set([0]),
+      });
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 1, height: 10 });
+      expect(next.previewCursor).toBe(2);
+      expect([...next.previewSelectedLines]).toEqual([0]); // unchanged
+    });
   });
 
   describe("SET_PREVIEW_CURSOR", () => {
@@ -384,18 +440,52 @@ describe("appReducer", () => {
     });
   });
 
+  describe("POP_PATH_HISTORY", () => {
+    test("pops last path from history and sets as currentPath", () => {
+      const state = createState({
+        currentPath: "/current",
+        pathHistory: ["/first", "/second"],
+      });
+      const next = appReducer(state, { type: "POP_PATH_HISTORY" });
+      expect(next.currentPath).toBe("/second");
+      expect(next.pathHistory).toEqual(["/first"]);
+    });
+
+    test("resets cursor, selection, and search", () => {
+      const state = createState({
+        currentPath: "/current",
+        pathHistory: ["/prev"],
+        cursor: 5,
+        selectedIndices: new Set([1, 2]),
+        search: { query: "foo", matches: [0], currentMatch: 0 },
+      });
+      const next = appReducer(state, { type: "POP_PATH_HISTORY" });
+      expect(next.cursor).toBe(0);
+      expect(next.selectedIndices.size).toBe(0);
+      expect(next.search).toBeNull();
+    });
+
+    test("returns same state when history is empty", () => {
+      const state = createState({ pathHistory: [] });
+      const next = appReducer(state, { type: "POP_PATH_HISTORY" });
+      expect(next).toBe(state);
+    });
+  });
+
   describe("SET_MODE with preview reset", () => {
     test("resets preview state when leaving preview mode", () => {
       const state = createState({
         mode: "preview",
         previewScroll: 10,
         previewCursor: 15,
+        previewVisualAnchor: 5,
         previewSelectedLines: new Set([1, 2, 3]),
       });
       const next = appReducer(state, { type: "SET_MODE", mode: "normal" });
       expect(next.mode).toBe("normal");
       expect(next.previewScroll).toBe(0);
       expect(next.previewCursor).toBe(0);
+      expect(next.previewVisualAnchor).toBeNull();
       expect(next.previewSelectedLines.size).toBe(0);
     });
 
@@ -404,11 +494,13 @@ describe("appReducer", () => {
         mode: "preview",
         previewScroll: 10,
         previewCursor: 15,
+        previewVisualAnchor: 5,
         previewSelectedLines: new Set([1, 2, 3]),
       });
       const next = appReducer(state, { type: "SET_MODE", mode: "preview" });
       expect(next.previewScroll).toBe(10);
       expect(next.previewCursor).toBe(15);
+      expect(next.previewVisualAnchor).toBe(5);
       expect(next.previewSelectedLines.size).toBe(3);
     });
   });

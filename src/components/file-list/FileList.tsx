@@ -54,7 +54,7 @@ export function FileList({
         const realIndex = startIndex + i;
         return (
           <Box key={entry.path} width={width}>
-            {dimmed ? (
+            {dimmed && realIndex !== cursor ? (
               <Text dimColor>
                 {entry.isDirectory
                   ? ` ${entry.name}/`
@@ -67,6 +67,7 @@ export function FileList({
                 isSelected={selectedIndices.has(realIndex)}
                 isSearchMatch={matchSet.has(realIndex)}
                 width={width}
+                dimmed={dimmed}
               />
             )}
           </Box>

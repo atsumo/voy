@@ -20,6 +20,7 @@ export function CurrentPane({ height, width }: CurrentPaneProps) {
         searchMatches={state.search?.matches}
         height={height}
         width={width}
+        dimmed={state.mode === "preview"}
       />
     </Box>
   );
