@@ -20,6 +20,7 @@ export interface KeyActionContext {
   exit: () => void;
   config: VoyConfig;
   openEditor: (filePath: string, line?: number) => void;
+  previewHeight: number;
 }
 
 export interface KeyBindingRegistry {

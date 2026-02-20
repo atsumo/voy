@@ -22,6 +22,7 @@ function createState(overrides?: Partial<AppState>): AppState {
     showHidden: false,
     visualAnchor: 0,
     previewScroll: 0,
+    previewCursor: 0,
     previewSelectedLines: new Set(),
     ...overrides,
   };
@@ -230,61 +231,119 @@ describe("appReducer", () => {
     });
   });
 
-  describe("MOVE_PREVIEW_SCROLL", () => {
-    test("scrolls down", () => {
+  describe("MOVE_PREVIEW_CURSOR", () => {
+    test("moves cursor down", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2\nline3\nline4\nline5" },
-        previewScroll: 0,
+        previewCursor: 0,
       });
-      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: 2 });
-      expect(next.previewScroll).toBe(2);
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 2, height: 10 });
+      expect(next.previewCursor).toBe(2);
     });
 
-    test("scrolls up", () => {
+    test("moves cursor up", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2\nline3" },
-        previewScroll: 2,
+        previewCursor: 2,
       });
-      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: -1 });
-      expect(next.previewScroll).toBe(1);
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: -1, height: 10 });
+      expect(next.previewCursor).toBe(1);
     });
 
     test("clamps at top", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2" },
-        previewScroll: 0,
+        previewCursor: 0,
       });
-      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: -10 });
-      expect(next.previewScroll).toBe(0);
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: -10, height: 10 });
+      expect(next.previewCursor).toBe(0);
     });
 
     test("clamps at bottom", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2\nline3" },
-        previewScroll: 1,
+        previewCursor: 1,
       });
-      const next = appReducer(state, { type: "MOVE_PREVIEW_SCROLL", delta: 100 });
-      expect(next.previewScroll).toBe(2); // 3 lines, max index = 2
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 100, height: 10 });
+      expect(next.previewCursor).toBe(2); // 3 lines, max index = 2
+    });
+
+    test("scrolls down when cursor goes below viewport", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 2,
+        previewScroll: 0,
+      });
+      // viewport height=3, so visible lines are 0,1,2. Move cursor to 3 → scroll follows
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 1, height: 3 });
+      expect(next.previewCursor).toBe(3);
+      expect(next.previewScroll).toBe(1); // 3 - 3 + 1 = 1
+    });
+
+    test("scrolls up when cursor goes above viewport", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 5,
+        previewScroll: 5,
+      });
+      // cursor at 5, scroll at 5, move up by 1 → cursor=4, which is above scroll
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: -1, height: 3 });
+      expect(next.previewCursor).toBe(4);
+      expect(next.previewScroll).toBe(4);
+    });
+
+    test("does not scroll when cursor stays within viewport", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 3,
+        previewScroll: 2,
+      });
+      // viewport: lines 2,3,4 (scroll=2, height=3). Cursor at 3, move to 4 → still in viewport
+      const next = appReducer(state, { type: "MOVE_PREVIEW_CURSOR", delta: 1, height: 3 });
+      expect(next.previewCursor).toBe(4);
+      expect(next.previewScroll).toBe(2); // unchanged
     });
   });
 
-  describe("SET_PREVIEW_SCROLL", () => {
-    test("sets scroll position", () => {
+  describe("SET_PREVIEW_CURSOR", () => {
+    test("sets cursor position", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2\nline3\nline4" },
-        previewScroll: 0,
+        previewCursor: 0,
       });
-      const next = appReducer(state, { type: "SET_PREVIEW_SCROLL", index: 3 });
-      expect(next.previewScroll).toBe(3);
+      const next = appReducer(state, { type: "SET_PREVIEW_CURSOR", index: 3, height: 10 });
+      expect(next.previewCursor).toBe(3);
     });
 
     test("clamps out of range", () => {
       const state = createState({
         preview: { type: "text", content: "line1\nline2" },
+        previewCursor: 0,
+      });
+      const next = appReducer(state, { type: "SET_PREVIEW_CURSOR", index: 100, height: 10 });
+      expect(next.previewCursor).toBe(1);
+    });
+
+    test("scrolls to follow cursor when jumping to end", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 0,
         previewScroll: 0,
       });
-      const next = appReducer(state, { type: "SET_PREVIEW_SCROLL", index: 100 });
-      expect(next.previewScroll).toBe(1);
+      const next = appReducer(state, { type: "SET_PREVIEW_CURSOR", index: 9, height: 3 });
+      expect(next.previewCursor).toBe(9);
+      expect(next.previewScroll).toBe(7); // 9 - 3 + 1 = 7
+    });
+
+    test("scrolls to follow cursor when jumping to beginning", () => {
+      const state = createState({
+        preview: { type: "text", content: "0\n1\n2\n3\n4\n5\n6\n7\n8\n9" },
+        previewCursor: 9,
+        previewScroll: 7,
+      });
+      const next = appReducer(state, { type: "SET_PREVIEW_CURSOR", index: 0, height: 3 });
+      expect(next.previewCursor).toBe(0);
+      expect(next.previewScroll).toBe(0);
     });
   });
 
@@ -330,11 +389,13 @@ describe("appReducer", () => {
       const state = createState({
         mode: "preview",
         previewScroll: 10,
+        previewCursor: 15,
         previewSelectedLines: new Set([1, 2, 3]),
       });
       const next = appReducer(state, { type: "SET_MODE", mode: "normal" });
       expect(next.mode).toBe("normal");
       expect(next.previewScroll).toBe(0);
+      expect(next.previewCursor).toBe(0);
       expect(next.previewSelectedLines.size).toBe(0);
     });
 
@@ -342,10 +403,12 @@ describe("appReducer", () => {
       const state = createState({
         mode: "preview",
         previewScroll: 10,
+        previewCursor: 15,
         previewSelectedLines: new Set([1, 2, 3]),
       });
       const next = appReducer(state, { type: "SET_MODE", mode: "preview" });
       expect(next.previewScroll).toBe(10);
+      expect(next.previewCursor).toBe(15);
       expect(next.previewSelectedLines.size).toBe(3);
     });
   });

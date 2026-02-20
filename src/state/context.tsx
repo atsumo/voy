@@ -21,6 +21,7 @@ const initialState: AppState = {
   showHidden: false,
   visualAnchor: 0,
   previewScroll: 0,
+  previewCursor: 0,
   previewSelectedLines: new Set(),
 };
 

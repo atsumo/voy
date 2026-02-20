@@ -55,6 +55,7 @@ export interface AppState {
   showHidden: boolean;
   visualAnchor: number;
   previewScroll: number;
+  previewCursor: number;
   previewSelectedLines: Set<number>;
 }
 
@@ -79,8 +80,8 @@ export type AppAction =
   | { type: "SET_ERROR"; error: string | null }
   | { type: "TOGGLE_HIDDEN" }
   | { type: "SET_VISUAL_ANCHOR"; index: number }
-  | { type: "MOVE_PREVIEW_SCROLL"; delta: number }
-  | { type: "SET_PREVIEW_SCROLL"; index: number }
+  | { type: "MOVE_PREVIEW_CURSOR"; delta: number; height: number }
+  | { type: "SET_PREVIEW_CURSOR"; index: number; height: number }
   | { type: "TOGGLE_PREVIEW_LINE_SELECTION"; line: number }
   | { type: "SELECT_PREVIEW_LINE_RANGE"; from: number; to: number }
   | { type: "CLEAR_PREVIEW_SELECTION" };

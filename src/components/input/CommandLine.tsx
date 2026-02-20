@@ -70,6 +70,9 @@ export function CommandLine({ width }: CommandLineProps) {
         <Text color="cyan" bold>
           {modeLabel}
         </Text>
+        <Text dimColor>
+          {" "}Ln {state.previewCursor + 1}
+        </Text>
       </Box>
     );
   }

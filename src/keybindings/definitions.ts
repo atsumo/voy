@@ -14,6 +14,16 @@ import {
   createFile,
 } from "../fs/operations.ts";
 
+function enterOrPreview(ctx: KeyActionContext) {
+  const file = ctx.state.files[ctx.state.cursor];
+  if (!file) return;
+  if (file.isDirectory) {
+    ctx.enterDirectory();
+  } else if (ctx.state.preview.type === "text") {
+    ctx.dispatch({ type: "SET_MODE", mode: "preview" });
+  }
+}
+
 export function createDefaultBindings(): KeyBindingRegistry {
   const registry = createRegistry();
 
@@ -51,20 +61,20 @@ export function createDefaultBindings(): KeyBindingRegistry {
   // Directory navigation
   register(registry, "normal", {
     keys: ["l"],
-    description: "Enter directory / open file",
-    handler: ({ enterDirectory }) => enterDirectory(),
+    description: "Enter directory / open preview",
+    handler: enterOrPreview,
   });
 
   register(registry, "normal", {
     keys: ["return"],
-    description: "Enter directory / open file",
-    handler: ({ enterDirectory }) => enterDirectory(),
+    description: "Enter directory / open preview",
+    handler: enterOrPreview,
   });
 
   register(registry, "normal", {
     keys: ["right"],
-    description: "Enter directory / open file",
-    handler: ({ enterDirectory }) => enterDirectory(),
+    description: "Enter directory / open preview",
+    handler: enterOrPreview,
   });
 
   register(registry, "normal", {
@@ -383,68 +393,68 @@ export function createDefaultBindings(): KeyBindingRegistry {
 
   register(registry, "preview", {
     keys: ["j"],
-    description: "Scroll down",
-    handler: ({ dispatch, count }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: count || 1 }),
+    description: "Move cursor down",
+    handler: ({ dispatch, count, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: count || 1, height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["down"],
-    description: "Scroll down",
-    handler: ({ dispatch, count }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: count || 1 }),
+    description: "Move cursor down",
+    handler: ({ dispatch, count, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: count || 1, height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["k"],
-    description: "Scroll up",
-    handler: ({ dispatch, count }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -(count || 1) }),
+    description: "Move cursor up",
+    handler: ({ dispatch, count, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: -(count || 1), height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["up"],
-    description: "Scroll up",
-    handler: ({ dispatch, count }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -(count || 1) }),
+    description: "Move cursor up",
+    handler: ({ dispatch, count, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: -(count || 1), height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["C-d"],
     description: "Half page down",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: 15 }),
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: Math.floor(previewHeight / 2), height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["C-u"],
     description: "Half page up",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: -15 }),
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: -Math.floor(previewHeight / 2), height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["g", "g"],
     description: "Go to first line",
-    handler: ({ dispatch }) =>
-      dispatch({ type: "SET_PREVIEW_SCROLL", index: 0 }),
+    handler: ({ dispatch, previewHeight }) =>
+      dispatch({ type: "SET_PREVIEW_CURSOR", index: 0, height: previewHeight }),
   });
 
   register(registry, "preview", {
     keys: ["G"],
     description: "Go to last line",
-    handler: ({ state, dispatch }) => {
+    handler: ({ state, dispatch, previewHeight }) => {
       const totalLines = state.preview.content.split("\n").length;
-      dispatch({ type: "SET_PREVIEW_SCROLL", index: totalLines - 1 });
+      dispatch({ type: "SET_PREVIEW_CURSOR", index: totalLines - 1, height: previewHeight });
     },
   });
 
   register(registry, "preview", {
     keys: [" "],
     description: "Toggle line selection",
-    handler: ({ state, dispatch }) => {
-      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewScroll });
-      dispatch({ type: "MOVE_PREVIEW_SCROLL", delta: 1 });
+    handler: ({ state, dispatch, previewHeight }) => {
+      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewCursor });
+      dispatch({ type: "MOVE_PREVIEW_CURSOR", delta: 1, height: previewHeight });
     },
   });
 
@@ -452,7 +462,7 @@ export function createDefaultBindings(): KeyBindingRegistry {
     keys: ["v"],
     description: "Visual line selection toggle",
     handler: ({ state, dispatch }) => {
-      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewScroll });
+      dispatch({ type: "TOGGLE_PREVIEW_LINE_SELECTION", line: state.previewCursor });
     },
   });
 
@@ -478,7 +488,7 @@ export function createDefaultBindings(): KeyBindingRegistry {
       const text =
         selectedLines.length > 0
           ? selectedLines.map((i) => lines[i] ?? "").join("\n")
-          : lines[state.previewScroll] ?? "";
+          : lines[state.previewCursor] ?? "";
       try {
         Bun.spawnSync(["pbcopy"], {
           stdin: new TextEncoder().encode(text),
@@ -501,7 +511,7 @@ export function createDefaultBindings(): KeyBindingRegistry {
     handler: ({ state, openEditor }) => {
       const file = state.files[state.cursor];
       if (file && !file.isDirectory) {
-        openEditor(file.path, state.previewScroll + 1);
+        openEditor(file.path, state.previewCursor + 1);
       }
     },
   });

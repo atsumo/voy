@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useInput, useApp } from "ink";
+import { useScreenSize } from "fullscreen-ink";
 import { useAppState, useAppDispatch } from "../state/context.tsx";
 import { useConfig } from "../config/config.ts";
 import { parseInput, keyToString, createKeyBuffer, type KeyBuffer } from "../keybindings/parser.ts";
@@ -23,10 +24,14 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
   const dispatch = useAppDispatch();
   const config = useConfig();
   const { exit } = useApp();
+  const { height: screenHeight } = useScreenSize();
+  const previewHeight = Math.max(1, screenHeight - 2);
   const registryRef = useRef(createDefaultBindings());
   const bufferRef = useRef<KeyBuffer>(createKeyBuffer());
   const stateRef = useRef(state);
   stateRef.current = state;
+  const previewHeightRef = useRef(previewHeight);
+  previewHeightRef.current = previewHeight;
 
   const buildContext = useCallback(
     (count: number): KeyActionContext => ({
@@ -43,6 +48,7 @@ export function useKeyBindings(options: UseKeyBindingsOptions) {
         openInEditor(filePath, config.editor.command, line);
         options.refresh();
       },
+      previewHeight: previewHeightRef.current,
     }),
     [dispatch, exit, options, config],
   );

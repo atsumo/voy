@@ -55,7 +55,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
             ? ""
             : state.commandInput,
         ...(resetPreview
-          ? { previewScroll: 0, previewSelectedLines: new Set<number>() }
+          ? { previewScroll: 0, previewCursor: 0, previewSelectedLines: new Set<number>() }
           : {}),
       };
     }
@@ -114,22 +114,34 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "SET_VISUAL_ANCHOR":
       return { ...state, visualAnchor: action.index };
 
-    case "MOVE_PREVIEW_SCROLL": {
+    case "MOVE_PREVIEW_CURSOR": {
       const totalLines = state.preview.content.split("\n").length;
-      const newScroll = Math.max(
+      const newCursor = Math.max(
         0,
-        Math.min(totalLines - 1, state.previewScroll + action.delta),
+        Math.min(totalLines - 1, state.previewCursor + action.delta),
       );
-      return { ...state, previewScroll: newScroll };
+      let newScroll = state.previewScroll;
+      if (newCursor < newScroll) {
+        newScroll = newCursor;
+      } else if (newCursor > newScroll + action.height - 1) {
+        newScroll = newCursor - action.height + 1;
+      }
+      return { ...state, previewCursor: newCursor, previewScroll: newScroll };
     }
 
-    case "SET_PREVIEW_SCROLL": {
+    case "SET_PREVIEW_CURSOR": {
       const totalLines = state.preview.content.split("\n").length;
-      const newScroll = Math.max(
+      const newCursor = Math.max(
         0,
         Math.min(totalLines - 1, action.index),
       );
-      return { ...state, previewScroll: newScroll };
+      let newScroll = state.previewScroll;
+      if (newCursor < newScroll) {
+        newScroll = newCursor;
+      } else if (newCursor > newScroll + action.height - 1) {
+        newScroll = newCursor - action.height + 1;
+      }
+      return { ...state, previewCursor: newCursor, previewScroll: newScroll };
     }
 
     case "TOGGLE_PREVIEW_LINE_SELECTION": {
