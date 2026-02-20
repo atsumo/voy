@@ -2,6 +2,8 @@
 
 Yazi-style three-pane TUI file manager built with Bun + Ink (React for CLI).
 
+![demo](demo/demo.gif)
+
 ## Features
 
 - **Three-pane layout** — Parent / Current / Preview columns
