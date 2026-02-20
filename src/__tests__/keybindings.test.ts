@@ -244,9 +244,9 @@ describe("createDefaultBindings", () => {
     expect(exact!.exact).toBe(true);
   });
 
-  test("p binding exists (preview mode entry)", () => {
+  test("P binding exists (preview mode entry)", () => {
     const registry = createDefaultBindings();
-    const exact = findExactMatch(registry, "normal", ["p"]);
+    const exact = findExactMatch(registry, "normal", ["P"]);
     expect(exact).not.toBeNull();
     expect(exact!.description).toBe("Enter preview mode");
   });

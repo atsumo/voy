@@ -209,9 +209,9 @@ export function createDefaultBindings(): KeyBindingRegistry {
     },
   });
 
-  // Enter preview mode (single 'p' - activates on timeout when text preview is showing)
+  // Enter preview mode (Shift+P — avoids conflict with pp paste)
   register(registry, "normal", {
-    keys: ["p"],
+    keys: ["P"],
     description: "Enter preview mode",
     handler: ({ state, dispatch }) => {
       if (state.preview.type === "text") {
