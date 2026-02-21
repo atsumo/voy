@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "74105a39c04a",
+  "strategy": "auto-commit",
+  "branch": "feature/git-status",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/file-list/FileItem.tsx",
+    "src/git/status.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/74/105a39c04a/0/metadata.json",
+      "transcript": "/74/105a39c04a/0/full.jsonl",
+      "context": "",
+      "content_hash": "/74/105a39c04a/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 6018,
+    "cache_read_tokens": 283831,
+    "output_tokens": 2353,
+    "api_call_count": 6
+  }
+}

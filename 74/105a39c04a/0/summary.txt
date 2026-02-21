@@ -1,0 +1,12 @@
+変更内容:
+
+| 状態 | 変更前 | 変更後 |
+|------|--------|--------|
+| Modified | `M` | `●` |
+| Added | `A` | `+` |
+| Deleted | `D` | `✕` |
+| Renamed | `R` | `→` |
+| Untracked | `?` | `?` |
+| Ignored | `!` | `!` |
+
+`?` と `!` はもともと記号なのでそのままにしています。色付け（Modified=黄、Added=緑、Deleted=赤、Untracked=灰）は従来通りです。
