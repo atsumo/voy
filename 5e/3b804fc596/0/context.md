@@ -1,0 +1,39 @@
+# Session Context
+
+**Session ID:** eea0998f-b633-4937-91bd-7769285e042d
+
+**Commit Message:** このようにfileの左側にそのfileのtypeのiconを表示したいです
+
+## Prompt
+
+このようにfileの左側にそのfileのtypeのiconを表示したいです
+
+## Summary
+
+実装完了です。変更の概要:
+
+**新規ファイル:**
+- `src/utils/icons.ts` — Nerd Fontアイコンマッピング。`getFileIcon(entry)` が `{ icon, color }` を返す
+  - 特殊ファイル名: `Dockerfile`, `package.json`, `.gitignore`, `tsconfig.json` 等 (~20件)
+  - 拡張子マッピング: TS/JS, Python, Rust, Go, Ruby, Java, C/C++, Shell, Config, Markup, Images, Video, Audio, Archives, Documents 等 (~80件)
+  - デフォルト: ディレクトリ=``, シムリンク=``, ファイル=``
+
+**変更ファイル:**
+- `FileItem.tsx` — アイコンをファイル名の前に独立した `<Text>` で表示。アイコン色はgit statusに影響されない。幅計算を`-6`に調整
+- `FileList.tsx` — dimmed行でもアイコン表示
+- `DirectoryPreview.tsx` — プレビューペインでもアイコン表示
+
+テスト115件全パス、ビルド成功。Nerd Fontがインストールされたターミナルで `bun run dev` して表示を確認してみてください。
+
+## Key Actions
+
+- - **Task**: Explore file rendering components
+- - **Read**: /Users/atsumo/.ghq/github.com/atsumo/voy/.claude/worktrees/reverent-jackson/src/components/file-list/FileItem.tsx
+- - **Read**: /Users/atsumo/.ghq/github.com/atsumo/voy/.claude/worktrees/reverent-jackson/src/utils/colors.ts
+- - **EnterPlanMode**: 
+- - **AskUserQuestion**: 
+- - **Task**: Check FileItem rendering and deps
+- - **Task**: Design file icon implementation plan
+- - **Read**: /Users/atsumo/.ghq/github.com/atsumo/voy/.claude/worktrees/reverent-jackson/src/components/file-list/FileList.tsx
+- - **Read**: /Users/atsumo/.ghq/github.com/atsumo/voy/.claude/worktrees/reverent-jackson/src/components/preview/DirectoryPreview.tsx
+- - **Write**: /Users/atsumo/.claude/plans/declarative-percolating-leaf.md

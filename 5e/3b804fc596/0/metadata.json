@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "5e3b804fc596",
+  "session_id": "eea0998f-b633-4937-91bd-7769285e042d",
+  "strategy": "auto-commit",
+  "created_at": "2026-02-21T04:58:54.310966Z",
+  "branch": "feat/nerd-font-file-icons",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/file-list/FileItem.tsx",
+    "src/components/file-list/FileList.tsx",
+    "src/components/preview/DirectoryPreview.tsx",
+    "src/utils/icons.ts"
+  ],
+  "agent": "Claude Code",
+  "checkpoint_transcript_start": 1,
+  "transcript_lines_at_start": 1,
+  "token_usage": {
+    "input_tokens": 35,
+    "cache_creation_tokens": 60545,
+    "cache_read_tokens": 1971793,
+    "output_tokens": 325,
+    "api_call_count": 29,
+    "subagent_tokens": {
+      "input_tokens": 60,
+      "cache_creation_tokens": 124201,
+      "cache_read_tokens": 1685604,
+      "output_tokens": 359,
+      "api_call_count": 36
+    }
+  }
+}

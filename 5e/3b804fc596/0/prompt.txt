@@ -1,0 +1,1 @@
+このようにfileの左側にそのfileのtypeのiconを表示したいです
