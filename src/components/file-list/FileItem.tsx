@@ -2,6 +2,7 @@ import React from "react";
 import { Text } from "ink";
 import type { FileEntry } from "../../state/types.ts";
 import { colorize } from "../../utils/colors.ts";
+import { getFileIcon } from "../../utils/icons.ts";
 import { formatSize, formatDate } from "../../utils/formatting.ts";
 
 interface FileItemProps {
@@ -22,7 +23,7 @@ export function FileItem({
   dimmed = false,
 }: FileItemProps) {
   const color = colorize(entry);
-  const icon = entry.isDirectory ? "/" : entry.isSymlink ? "@" : " ";
+  const fileIcon = getFileIcon(entry);
 
   // Git status → override filename color (VS Code style)
   const gitNameColor = entry.gitStaged ? "green"
@@ -35,7 +36,7 @@ export function FileItem({
   const sizeStr = entry.isDirectory ? " <DIR>" : formatSize(entry.size);
   const dateStr = formatDate(entry.modified);
   const metaWidth = sizeStr.length + 1 + dateStr.length + 1;
-  const nameWidth = Math.max(10, width - metaWidth - 4);
+  const nameWidth = Math.max(10, width - metaWidth - 6);
   let displayName = entry.name;
   if (displayName.length > nameWidth) {
     displayName = displayName.slice(0, nameWidth - 1) + "…";
@@ -49,7 +50,8 @@ export function FileItem({
     return (
       <Text backgroundColor="gray" color="white">
         <Text color="white">{prefix}</Text>
-        <Text>{displayName}{icon}</Text>
+        <Text color={fileIcon.color}>{fileIcon.icon} </Text>
+        <Text>{displayName}</Text>
         <Text> {sizeStr} {dateStr}</Text>
       </Text>
     );
@@ -71,11 +73,14 @@ export function FileItem({
       <Text color={isSelected ? "cyan" : isCursor ? "black" : "white"}>
         {prefix}
       </Text>
+      <Text color={isCursor ? "black" : fileIcon.color}>
+        {fileIcon.icon}{" "}
+      </Text>
       <Text
         color={isCursor ? "black" : gitNameColor ?? undefined}
         bold={entry.isDirectory && !isCursor}
       >
-        {isCursor || gitNameColor ? `${displayName}${icon}` : color(`${displayName}${icon}`)}
+        {isCursor || gitNameColor ? displayName : color(displayName)}
       </Text>
       <Text color={isCursor ? "black" : "gray"}>
         {" "}
