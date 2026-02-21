@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { FileEntry } from "../../state/types.ts";
 import { FileItem } from "./FileItem.tsx";
+import { getFileIcon } from "../../utils/icons.ts";
 
 interface FileListProps {
   files: FileEntry[];
@@ -56,9 +57,7 @@ export function FileList({
           <Box key={entry.path} width={width}>
             {dimmed && realIndex !== cursor ? (
               <Text dimColor>
-                {entry.isDirectory
-                  ? ` ${entry.name}/`
-                  : ` ${entry.name}`}
+                {` ${getFileIcon(entry).icon} ${entry.name}`}
               </Text>
             ) : (
               <FileItem
