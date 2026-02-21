@@ -1,3 +1,5 @@
+import type { GitStatusCode } from "../git/status.ts";
+
 export type Mode = "normal" | "command" | "search" | "visual" | "prompt" | "preview";
 
 export type SortField = "name" | "size" | "modified";
@@ -11,6 +13,13 @@ export interface FileEntry {
   size: number;
   modified: Date;
   permissions: string;
+  gitStatus?: GitStatusCode;
+  gitStaged?: boolean;
+}
+
+export interface GitInfo {
+  isRepo: boolean;
+  branch: string;
 }
 
 export interface ClipboardEntry {
@@ -19,7 +28,7 @@ export interface ClipboardEntry {
 }
 
 export interface PreviewContent {
-  type: "text" | "directory" | "binary" | "none" | "error";
+  type: "text" | "directory" | "binary" | "none" | "error" | "diff" | "gitlog" | "github-issues" | "github-prs";
   content: string;
   entries?: FileEntry[];
   highlightedLines?: string[];
@@ -55,6 +64,7 @@ export interface AppState {
   sort: { field: SortField; order: SortOrder };
   showHidden: boolean;
   visualAnchor: number;
+  git: GitInfo;
   previewScroll: number;
   previewCursor: number;
   previewVisualAnchor: number | null;
@@ -89,4 +99,5 @@ export type AppAction =
   | { type: "TOGGLE_PREVIEW_LINE_SELECTION"; line: number }
   | { type: "SELECT_PREVIEW_LINE_RANGE"; from: number; to: number }
   | { type: "CLEAR_PREVIEW_SELECTION" }
-  | { type: "POP_PATH_HISTORY" };
+  | { type: "POP_PATH_HISTORY" }
+  | { type: "SET_GIT_INFO"; git: GitInfo };
