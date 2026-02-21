@@ -120,6 +120,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "SET_VISUAL_ANCHOR":
       return { ...state, visualAnchor: action.index };
 
+    case "SET_GIT_INFO":
+      return { ...state, git: action.git };
+
     case "MOVE_PREVIEW_CURSOR": {
       const totalLines = state.preview.content.split("\n").length;
       const newCursor = Math.max(

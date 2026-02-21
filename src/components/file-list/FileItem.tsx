@@ -24,10 +24,18 @@ export function FileItem({
   const color = colorize(entry);
   const icon = entry.isDirectory ? "/" : entry.isSymlink ? "@" : " ";
 
+  // Git status → override filename color (VS Code style)
+  const gitNameColor = entry.gitStaged ? "green"
+    : entry.gitStatus === "M" ? "yellow"
+    : entry.gitStatus === "?" ? "green"
+    : entry.gitStatus === "D" ? "red"
+    : entry.gitStatus === "A" ? "green"
+    : undefined;
+
   const sizeStr = entry.isDirectory ? " <DIR>" : formatSize(entry.size);
   const dateStr = formatDate(entry.modified);
   const metaWidth = sizeStr.length + 1 + dateStr.length + 1;
-  const nameWidth = Math.max(10, width - metaWidth - 3);
+  const nameWidth = Math.max(10, width - metaWidth - 4);
   let displayName = entry.name;
   if (displayName.length > nameWidth) {
     displayName = displayName.slice(0, nameWidth - 1) + "…";
@@ -64,10 +72,10 @@ export function FileItem({
         {prefix}
       </Text>
       <Text
-        color={isCursor ? "black" : undefined}
+        color={isCursor ? "black" : gitNameColor ?? undefined}
         bold={entry.isDirectory && !isCursor}
       >
-        {isCursor ? `${displayName}${icon}` : color(`${displayName}${icon}`)}
+        {isCursor || gitNameColor ? `${displayName}${icon}` : color(`${displayName}${icon}`)}
       </Text>
       <Text color={isCursor ? "black" : "gray"}>
         {" "}

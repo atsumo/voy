@@ -1,7 +1,8 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useAppState, useAppDispatch } from "../state/context.tsx";
 import { readDirectory } from "../fs/operations.ts";
-import { dirname, basename } from "node:path";
+import { dirname, basename, relative } from "node:path";
+import { getGitInfo, getDisplayStatus, isStaged } from "../git/status.ts";
 
 export function useFileSystem() {
   const state = useAppState();
@@ -16,6 +17,38 @@ export function useFileSystem() {
         state.sort.field,
         state.sort.order,
       );
+      // Enrich files with git status
+      const gitInfo = await getGitInfo(state.currentPath);
+      dispatch({
+        type: "SET_GIT_INFO",
+        git: { isRepo: gitInfo.isRepo, branch: gitInfo.branch },
+      });
+
+      if (gitInfo.isRepo) {
+        const rootProc = Bun.spawn(
+          ["git", "rev-parse", "--show-toplevel"],
+          { cwd: state.currentPath, stdout: "pipe", stderr: "pipe" },
+        );
+        const repoRoot = (await new Response(rootProc.stdout).text()).trim();
+
+        for (const file of files) {
+          const relPath = relative(repoRoot, file.path);
+          const status = gitInfo.files.get(relPath);
+          if (status) {
+            file.gitStatus = getDisplayStatus(status) ?? undefined;
+            file.gitStaged = isStaged(status);
+          } else if (file.isDirectory) {
+            const dirPrefix = relPath + "/";
+            for (const [path, fileStatus] of gitInfo.files) {
+              if (path.startsWith(dirPrefix)) {
+                file.gitStatus = getDisplayStatus(fileStatus) ?? undefined;
+                break;
+              }
+            }
+          }
+        }
+      }
+
       dispatch({ type: "SET_FILES", files });
 
       // Load parent directory

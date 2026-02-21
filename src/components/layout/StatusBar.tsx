@@ -24,6 +24,8 @@ export function StatusBar({ width }: StatusBarProps) {
     ? ` [${state.clipboard.operation}: ${state.clipboard.files.length}]`
     : "";
 
+  const branchInfo = state.git.isRepo ? ` [${state.git.branch}]` : "";
+
   const pathDisplay = shortenPath(state.currentPath, Math.floor(width * 0.4));
 
   const rightInfo = `${position}${selectedInfo}${clipboardInfo}`;
@@ -37,6 +39,9 @@ export function StatusBar({ width }: StatusBarProps) {
         <Text bold color="blue">
           {pathDisplay}
         </Text>
+        {state.git.isRepo && (
+          <Text color="green">{branchInfo}</Text>
+        )}
         <Text dimColor>{fileInfo}</Text>
       </Box>
       <Box>

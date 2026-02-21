@@ -21,6 +21,7 @@ function createState(overrides?: Partial<AppState>): AppState {
     sort: { field: "name", order: "asc" },
     showHidden: false,
     visualAnchor: 0,
+    git: { isRepo: false, branch: "" },
     previewScroll: 0,
     previewCursor: 0,
     previewVisualAnchor: null,

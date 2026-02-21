@@ -15,6 +15,8 @@ import {
   createFile,
 } from "../fs/operations.ts";
 import type { AppState } from "../state/types.ts";
+import { gitAdd, gitCommit, gitPush, gitDiff, gitLog } from "../git/operations.ts";
+import { getIssueList, getPRList, openInBrowser } from "../git/github.ts";
 
 function calcViewport(state: AppState, contentHeight: number) {
   const visibleCount = Math.max(1, contentHeight);
@@ -533,6 +535,177 @@ export function createDefaultBindings(): KeyBindingRegistry {
       const matchIndex = state.search.matches[prev];
       if (matchIndex !== undefined) {
         dispatch({ type: "SET_CURSOR", index: matchIndex });
+      }
+    },
+  });
+
+  // ── Git operations ────────────────────────────────
+
+  register(registry, "normal", {
+    keys: ["g", "a"],
+    description: "Git add (stage) file",
+    handler: async ({ state, dispatch, refresh }) => {
+      if (!state.git.isRepo) return;
+      const indices =
+        state.selectedIndices.size > 0
+          ? [...state.selectedIndices]
+          : [state.cursor];
+      const files = indices.map((i) => state.files[i]!).filter(Boolean);
+      try {
+        await gitAdd(files.map((f) => f.path), state.currentPath);
+        dispatch({ type: "CLEAR_SELECTION" });
+        refresh();
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `git add failed: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "c"],
+    description: "Git commit",
+    handler: ({ state, dispatch, refresh }) => {
+      if (!state.git.isRepo) return;
+      dispatch({
+        type: "SET_PROMPT",
+        prompt: {
+          title: "Commit message:",
+          value: "",
+          onSubmit: async (value: string) => {
+            if (value.trim()) {
+              try {
+                await gitCommit(value, state.currentPath);
+                refresh();
+              } catch (err) {
+                dispatch({
+                  type: "SET_ERROR",
+                  error: `git commit failed: ${err instanceof Error ? err.message : String(err)}`,
+                });
+              }
+            }
+            dispatch({ type: "SET_PROMPT", prompt: null });
+          },
+        },
+      });
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "p"],
+    description: "Git push",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      try {
+        const result = await gitPush(state.currentPath);
+        dispatch({ type: "SET_ERROR", error: `Push: ${result || "done"}` });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `git push failed: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "d"],
+    description: "Show git diff in preview",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      const file = state.files[state.cursor];
+      if (!file) return;
+      try {
+        const diff = await gitDiff(file.path, state.currentPath);
+        dispatch({
+          type: "SET_PREVIEW",
+          preview: { type: "diff", content: diff },
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `git diff failed: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "l"],
+    description: "Show git log in preview",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      try {
+        const log = await gitLog(state.currentPath);
+        dispatch({
+          type: "SET_PREVIEW",
+          preview: { type: "gitlog", content: log },
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `git log failed: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  // ── GitHub CLI operations ────────────────────────────────
+
+  register(registry, "normal", {
+    keys: ["g", "i"],
+    description: "Show GitHub issues in preview",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      try {
+        const issues = await getIssueList(state.currentPath);
+        dispatch({
+          type: "SET_PREVIEW",
+          preview: { type: "github-issues", content: issues },
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "P"],
+    description: "Show GitHub PRs in preview",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      try {
+        const prs = await getPRList(state.currentPath);
+        dispatch({
+          type: "SET_PREVIEW",
+          preview: { type: "github-prs", content: prs },
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    },
+  });
+
+  register(registry, "normal", {
+    keys: ["g", "o"],
+    description: "Open in browser (gh browse)",
+    handler: async ({ state, dispatch }) => {
+      if (!state.git.isRepo) return;
+      try {
+        await openInBrowser(state.currentPath);
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: `${err instanceof Error ? err.message : String(err)}`,
+        });
       }
     },
   });
