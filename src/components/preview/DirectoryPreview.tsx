@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { FileEntry } from "../../state/types.ts";
 import { colorize } from "../../utils/colors.ts";
+import { getFileIcon } from "../../utils/icons.ts";
 
 interface DirectoryPreviewProps {
   entries: FileEntry[];
@@ -20,10 +21,11 @@ export function DirectoryPreview({
     <Box flexDirection="column" height={height} width={width}>
       {visible.map((entry) => {
         const color = colorize(entry);
-        const icon = entry.isDirectory ? "/" : "";
+        const fileIcon = getFileIcon(entry);
         return (
           <Text key={entry.path} dimColor wrap="truncate">
-            {color(`${entry.name}${icon}`)}
+            <Text color={fileIcon.color}>{fileIcon.icon} </Text>
+            {color(entry.name)}
           </Text>
         );
       })}
